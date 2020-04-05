@@ -1,0 +1,212 @@
+type: edu
+custom_name: stage2
+files:
+- name: tests.py
+  visible: false
+  text: |
+    from hstest.stage_test import *
+    from hstest.test_case import TestCase
+
+    CheckResult.correct = lambda: CheckResult(True, '')
+    CheckResult.wrong = lambda feedback: CheckResult(False, feedback)
+
+    class CoffeeMachineTest(StageTest):
+        def generate(self) -> List[TestCase]:
+            return TestCase.from_stepik(
+                [
+                    ('25', '25'),
+                    ('125', '125'),
+                    ('1', '1'),
+                    ('123', '123')
+                ]
+            )
+
+        def check(self, reply: str, clue: Any) -> CheckResult:
+
+            lines = reply.splitlines()
+
+            if len(lines) < 3:
+                return CheckResult.wrong(
+                    'Output contains less than 3 lines, '
+                    'but should output at least 3 lines')
+
+            last_3_lines = reply.splitlines()[-3:]
+            cups = int(clue)
+            water = milk = beans = False
+            for line in last_3_lines:
+                line = line.lower()
+                if 'milk' in line:
+                    milk = str(cups * 50) in line
+
+                    if not milk:
+                        return CheckResult.wrong(
+                            f"For the input {clue} your program output:\n\"" +
+                            f"{line}\"\nbut the amount of milk should be {cups * 50}"
+                        )
+
+                elif 'water' in line:
+                    water = str(cups * 200) in line
+
+                    if not water:
+                        return CheckResult.wrong(
+                            f"For the input {clue} your program output:\n" +
+                            f"{line}\nbut the amount of water should be {cups * 200}"
+                        )
+
+                elif 'beans' in line:
+                    beans = str(cups * 15) in line
+
+                    if not beans:
+                        return CheckResult.wrong(
+                            f"For the input {clue} your program output:\n" +
+                            f"{line}\nbut the amount of beans should be {cups * 15}"
+                        )
+
+                else:
+                    return CheckResult.wrong(
+                        "One of the last 3 lines " +
+                        "doesn't contain \"milk\", \"water\" or \"beans\""
+                    )
+
+            if not water:
+                return CheckResult.wrong("There is no line with amount of water")
+
+            if not milk:
+                return CheckResult.wrong("There is no line with amount of milk")
+
+            if not beans:
+                return CheckResult.wrong("There is no line with amount of coffee beans")
+
+            return CheckResult.correct()
+
+
+    if __name__ == '__main__':
+        CoffeeMachineTest('machine.coffee_machine').run_tests()
+  learner_created: false
+- name: machine/coffee_machine.py
+  visible: true
+  text: |
+    current_water = 400
+    current_milk = 540
+    current_beans = 120
+    current_money = 550
+    current_cups = 9
+
+
+    # Represent status of the machine
+    def machine_status():
+        print('The coffee machine has:')
+        print(str(current_water) + ' of water')
+        print(str(current_milk) + ' of milk')
+        print(str(current_beans) + ' of coffee beans')
+        print(str(current_cups) + ' of disposable cups')
+        print('$' + str(current_money) + ' of money')
+        print()
+
+
+    # Coffee Types
+    def espresso():
+        global current_beans, current_cups, current_water, current_money
+        if current_water < 250:
+            return 'Sorry, not enough water!'
+        elif current_beans < 16:
+            return 'Sorry, not enough coffee beans!'
+        elif current_cups < 1:
+            return 'Sorry, not enough disposable cups!'
+        current_water -= 250
+        current_beans -= 16
+        current_cups -= 1
+        current_money += 4
+        return 'I have enough resources, making you a coffee!'
+
+
+    def latte():
+        global current_beans, current_milk, current_cups, current_water, current_money
+        if current_water < 350:
+            return 'Sorry, not enough water!'
+        elif current_milk < 75:
+            return 'Sorry, not enough milk!'
+        elif current_beans < 20:
+            return 'Sorry, not enough coffee beans!'
+        elif current_cups < 1:
+            return 'Sorry, not enough disposable cups!'
+        current_water -= 350
+        current_milk -= 75
+        current_beans -= 20
+        current_cups -= 1
+        current_money += 7
+        return 'I have enough resources, making you a coffee!'
+
+
+    def cappuccino():
+        global current_beans, current_milk, current_cups, current_water, current_money
+        if current_water < 200:
+            return 'Sorry, not enough water!'
+        elif current_milk < 100:
+            return 'Sorry, not enough milk!'
+        elif current_beans < 12:
+            return 'Sorry, not enough coffee beans!'
+        elif current_cups < 1:
+            return 'Sorry, not enough disposable cups!'
+        current_water -= 200
+        current_milk -= 100
+        current_beans -= 12
+        current_cups -= 1
+        current_money += 6
+        return 'I have enough resources, making you a coffee!'
+
+
+    # Machine Options
+    def buy(option):
+        if option == 'back':
+            return 'back'
+        return make_coffee(int(option))
+
+
+    def fill():
+        global current_beans, current_cups, current_milk, current_water
+        current_water += int(input('Write how many ml of water do you want to add:\n').strip())
+        current_milk += int(input('Write how many ml of milk do you want to add:\n').strip())
+        current_beans += int(input('Write how many grams of coffee beans do you want to add:\n').strip())
+        current_cups += int(input('Write how many disposable cups of coffee do you want to add:\n').strip())
+        print()
+
+
+    def take():
+        global current_money
+        gave_you = current_money
+        current_money = 0
+        return '\nI gave you $' + str(gave_you) + '\n'
+
+
+    def make_coffee(coffee_type):
+        message = ''
+        if coffee_type == 1:
+            message = espresso()
+        elif coffee_type == 2:
+            message = latte()
+        elif coffee_type == 3:
+            message = cappuccino()
+        return message
+
+
+    while True:
+        action = input('Write action (buy, fill, take, remaining, exit):\n').strip()
+        if action == 'remaining':
+            machine_status()
+        elif action == 'buy':
+            msg = buy(input('What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:\n').strip())
+            if msg == 'back':
+                continue
+            else:
+                print(msg, '\n')
+        elif action == 'fill':
+            fill()
+        elif action == 'take':
+            print(take(), '\n')
+        else:
+            break
+  learner_created: false
+feedback_link: https://hyperskill.org/projects/68/stages/367/implement
+status: Unchecked
+record: 5
